@@ -11,7 +11,7 @@ timeit(std::function<void(void)> f) {
     static volatile bool done;
     done = false;
     signal(SIGALRM, [] (int) { done = true; } );
-    alarm(5);
+    alarm(10);
     auto start = std::chrono::high_resolution_clock::now();
     unsigned long long iters;
     for (iters = 0; !done; ++iters)

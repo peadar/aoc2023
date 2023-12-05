@@ -4,6 +4,7 @@
 void timeit(std::function<void(void)>);
 extern void part1(std::istream &, std::ostream &);
 extern void part2(std::istream &, std::ostream &);
+extern void parse(std::istream &, std::ostream &);
 typedef void (*partfn)(std::istream &, std::ostream &);
 
 namespace aoc {

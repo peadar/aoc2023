@@ -11,12 +11,19 @@ using RangeSet = std::vector<Range>;
 
 struct Projection {
    ulong source;
+   ulong srcend;
    ulong destoff;
+   bool operator < (const Projection &rhs) const { return srcend < rhs.srcend; }
 };
 
 struct Mapping {
    std::string dest;
-   std::map<ulong, Projection> projections;
+   std::vector<Projection> projections;
+   std::vector<Projection>::const_iterator find(ulong seed) {
+      return std::upper_bound(
+               projections.begin(), projections.end(), seed,
+               [](ulong seed, const Projection &projection) { return seed < projection.srcend; });
+   }
 };
 
 struct Almanac {
@@ -27,9 +34,9 @@ struct Almanac {
       for (std::string cur = "seed"; cur != "location"; ) {
          auto &mapping = maps[cur];
          cur = mapping.dest;
-         auto it = mapping.projections.upper_bound(seed);
-         if (it != mapping.projections.end() && it->second.source <= seed)
-            seed += it->second.destoff;
+         auto it = mapping.find(seed);
+         if (it != mapping.projections.end() && it->source <= seed)
+            seed += it->destoff;
       }
       return seed;
    }
@@ -40,17 +47,17 @@ struct Almanac {
          auto &mapping = maps[cur];
          cur = mapping.dest;
          for (auto range : ranges) {
-            for (auto it = mapping.projections.upper_bound(range.first); range.first < range.second; ++it) {
-               if (it == mapping.projections.end() || range.second < it->second.source) {
+            for (auto it = mapping.find(range.first); range.first < range.second; ++it) {
+               if (it == mapping.projections.end() || range.second < it->source) {
                   outRanges.push_back(range);
                   break;
                }
-               if (range.first < it->second.source) {
-                  outRanges.emplace_back(range.first, it->second.source);
-                  range.first = it->second.source;
+               if (range.first < it->source) {
+                  outRanges.emplace_back(range.first, it->source);
+                  range.first = it->source;
                }
-               auto end = std::min(range.second, it->first);
-               outRanges.emplace_back(range.first + it->second.destoff, end + it->second.destoff);
+               auto end = std::min(range.second, it->srcend);
+               outRanges.emplace_back(range.first + it->destoff, end + it->destoff);
                range.first = end;
             }
          }
@@ -75,8 +82,9 @@ struct Almanac {
             std::istringstream values(line);
             ulong to, from, count;
             values >> to >> from >> count;
-            map.projections[from + count] = { from, to - from };
+            map.projections.emplace_back( from, from + count, to - from );
          }
+         std::sort(map.projections.begin(), map.projections.end());
       }
    }
 };

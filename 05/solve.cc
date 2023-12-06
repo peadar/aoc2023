@@ -77,14 +77,17 @@ struct Almanac {
          std::getline(is, s, '-'); // "to"
          std::getline(is, map.dest, ' ');
          std::getline(is, s); // "map:"
-
-         while (std::getline(is, line) && line != "") {
-            std::istringstream values(line);
-            ulong to, from, count;
-            values >> to >> from >> count;
+         while (isdigit(is.peek())) {
+            getline(is, s, ' ');
+            ulong to = stoul(s, 0, 0);
+            getline(is, s, ' ');
+            ulong from = stoul(s, 0, 0);
+            getline(is, s);
+            ulong count = stoul(s, 0, 0);
             map.projections.emplace_back( from, from + count, to - from );
          }
          std::sort(map.projections.begin(), map.projections.end());
+         std::getline(is, s); // empty line.
       }
    }
 };

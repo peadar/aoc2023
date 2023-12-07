@@ -3,34 +3,23 @@
 #include <iostream>
 #include <unordered_map>
 
-
 using ulong = unsigned long;
-
 enum class HandType { HIGH, PAIR, TWOPAIR, THREE, HOUSE, FOUR, FIVE, };
-enum class Card {
-   BAD, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, JACK, QUEEN, KING, ACE
-};
+enum class Card { BAD, WILD, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, JACK, QUEEN, KING, ACE };
 
-
-struct Hand {
-   std::array<Card, 5> cards {};
+template <bool wild> struct Hand {
    HandType type;
+   std::array<Card, 5> cards {};
    ulong bid {};
+   Hand(std::istream &);
+   auto operator <=> (const Hand &r) const = default;
 };
 
-std::istream &
-operator >> (std::istream &is, Card &c) {
+std::istream & operator >> (std::istream &is, Card &c) {
    char ch;
    is >> ch;
    switch (ch) {
-      case '2': c = Card::TWO; break;
-      case '3': c = Card::THREE; break;
-      case '4': c = Card::FOUR; break;
-      case '5': c = Card::FIVE; break;
-      case '6': c = Card::SIX; break;
-      case '7': c = Card::SEVEN; break;
-      case '8': c = Card::EIGHT; break;
-      case '9': c = Card::NINE; break;
+      case '2'...'9': c = Card(int(Card::TWO) + ch - '2'); break;
       case 'T': c = Card::TEN; break;
       case 'J': c = Card::JACK; break;
       case 'Q': c = Card::QUEEN; break;
@@ -41,62 +30,63 @@ operator >> (std::istream &is, Card &c) {
    return is;
 }
 
-std::istream &
-operator >> (std::istream &is, Hand &h) {
+// parse (and classify a hand)
+template<bool wild> Hand<wild>::Hand(std::istream &is) {
    std::unordered_map<Card, int> counts;
    std::array<char, 6> ofkind {};
+   int jacks = 0;
    for (int i = 0; i < 5; ++i) {
-      is >> h.cards[i];
-      counts[h.cards[i]]++;
+      Card card;
+      is >> card;
+      if (wild && card == Card::JACK) {
+         card = Card::WILD;
+         jacks++;
+      } else {
+         counts[card]++;
+      }
+      cards[i] = card;
    }
-   for (auto &[ card, count ] : counts) {
+   for (auto &[_, count] : counts)
       ofkind[count]++;
+   for (int i = 4; jacks != 0 && i > 0; --i) {
+      if (ofkind[i] == 0)
+         continue;
+      ofkind[i]--;
+      ofkind[i+jacks]++;
+      jacks = 0;
    }
+   ofkind[jacks]++;
    if (ofkind[5])
-      h.type = HandType::FIVE;
+      type = HandType::FIVE;
    else if (ofkind[4])
-      h.type = HandType::FOUR;
+      type = HandType::FOUR;
    else if (ofkind[3])
-      h.type = ofkind[2] ? HandType::HOUSE : HandType::THREE;
+      type = ofkind[2] ? HandType::HOUSE : HandType::THREE;
    else if (ofkind[2] == 2)
-      h.type = HandType::TWOPAIR;
+      type = HandType::TWOPAIR;
    else if (ofkind[2] == 1)
-      h.type = HandType::PAIR;
+      type = HandType::PAIR;
    else
-      h.type = HandType::HIGH;
-   return is >> h.bid;
+      type = HandType::HIGH;
+   is >> bid;
 }
 
-std::vector<Hand> parse(std::istream &is) {
-   std::vector<Hand> hands;
-   while (is.peek() != -1) {
-      Hand h;
-      is >> h;
-      if (!is)
-         return hands;
-      hands.push_back(h);
-   }
+template <bool wild> std::vector<Hand<wild>> parse(std::istream &is) {
+   std::vector<Hand<wild>> hands;
+   while (is)
+      hands.emplace_back(is);
+   hands.pop_back(); // kill the one added at EOF.
    return hands;
-}
+};
 
-void part1(std::istream &is, std::ostream &os) {
-   auto data = parse(is);
-   std::sort(data.begin(), data.end(), [] (const Hand &l, const Hand &r) {
-         if (l.type != r.type)
-            return l.type < r.type;
-         for (int i = 0; i < 5; ++i)
-            if (l.cards[i] != r.cards[i])
-               return l.cards[i] < r.cards[i];
-         return false; });
-
+template <bool wild> void solve(std::istream &is, std::ostream &os) {
+   auto data = parse<wild>(is);
+   std::sort(data.begin(), data.end());
    ulong total = 0;
-   for (size_t i = 0; i < data.size(); ++i) {
+   for (size_t i = 0; i < data.size(); ++i)
       total += data[i].bid * (i+1);
-   }
    os << total << "\n";
-
 }
 
-void part2(std::istream &is, std::ostream &os) {
-}
-
+void part1(std::istream &is, std::ostream &os) { solve<false>(is, os); }
+void part2(std::istream &is, std::ostream &os) { solve<true>(is, os); }

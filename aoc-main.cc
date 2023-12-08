@@ -5,59 +5,65 @@
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
-   std::string do_timeit = "";
-    for (int c; (c = getopt(argc, argv, "t:")) != -1; ) {
-        switch (c) {
-            case 't':
-                do_timeit = optarg;
-        }
-    }
+   bool do_timeit { false };
+   std::string parts = "*";
+   for (int c; (c = getopt(argc, argv, "tp:")) != -1; ) {
+      switch (c) {
+         case 't':
+            do_timeit = true;
+            break;
+         case 'p':
+            parts = optarg;
+            break;
+      }
+   }
 
-    std::ifstream in( argv[optind], std::ifstream::binary);
+   struct {
+      const char *name;
+      void (*func)(std::istream &, std::ostream &);
+   } funcs[] = {
+      { "null", [](std::istream &, std::ostream &) -> void {} },
+      { "part1", part1 },
+      { "part2", part2 },
+   };
 
-    if (do_timeit != "") {
-       // read the content of the file into memory, and issue it from there.
-       // copy content into vector of char.
-       std::vector<char> buf;
-       in.seekg(0);
-       std::copy( std::istreambuf_iterator<char>(in.rdbuf()), std::istreambuf_iterator<char>(), std::back_inserter(buf));
+   std::ifstream in( argv[optind], std::ifstream::binary);
 
-       struct SB : std::streambuf {
-          std::vector<char> &vec;
-          SB(std::vector<char> &vec) : vec(vec) {
-          }
-          void reset() {
-             setg(vec.data(), vec.data(), vec.data() + vec.size());
-          }
-       };
+   if (do_timeit) {
+      // read the content of the file into memory, and issue it from there.
+      // copy content into vector of char.
+      std::vector<char> buf;
+      in.seekg(0);
+      std::copy( std::istreambuf_iterator<char>(in.rdbuf()), std::istreambuf_iterator<char>(), std::back_inserter(buf));
 
-       std::fstream null("/dev/null");
-       SB sb(buf);
+      struct SB : std::streambuf {
+         std::vector<char> &vec;
+         SB(std::vector<char> &vec) : vec(vec) {
+         }
+         void reset() {
+            setg(vec.data(), vec.data(), vec.data() + vec.size());
+         }
+      };
 
-       struct {
-          const char *name;
-          void (*func)(std::istream &, std::ostream &);
-       } funcs[] = {
-          { "null", [](std::istream &, std::ostream &) -> void {} },
-          { "part1", part1 },
-          { "part2", part2 },
-       };
+      std::fstream null("/dev/null");
+      SB sb(buf);
 
-       for (auto [name, func] : funcs) {
-          if (do_timeit != "*" && do_timeit != name)
-             continue;
-          std::cout << "function: " << name << "\n";
-          timeit([&] {
-             sb.reset();
-             std::istream memin(&sb);
-             func(memin, null);
-             });
-       }
-       return 0;
-    }
-
-    part1(in, std::cout);
-    in.clear();
-    in.seekg(0);
-    part2(in, std::cout);
+      for (auto [name, func] : funcs) {
+         if (parts != "*" && parts != name)
+            continue;
+         std::cout << "function: " << name << "\n";
+         timeit([&] {
+               sb.reset();
+               std::istream memin(&sb);
+               func(memin, null);
+               });
+      }
+      return 0;
+   } else {
+      for (auto [ name, func] : funcs) {
+         func(in, std::cout);
+         in.clear();
+         in.seekg(0);
+      }
+   }
 }

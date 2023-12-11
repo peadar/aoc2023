@@ -77,7 +77,7 @@ void part1/* and 2 */( std::istream &is, std::ostream &os) {
       if (maze.contains(candidate) && (maze[candidate] & opposite(d)))
          maze[start] |= dir = d;
    }
-   int steps = 0;
+   int steps = 1;
    for (Location pos = start + dir; (maze[pos] & START) == 0; pos = pos + dir, steps++) {
       Cell &cell = maze[pos];
       dir = Cardinal(cell & (NORTH|SOUTH|EAST|WEST) & ~opposite(dir) );

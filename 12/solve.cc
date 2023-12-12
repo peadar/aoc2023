@@ -1,9 +1,10 @@
 #include "../aoc.h"
 #include <vector>
 #include <iterator>
-#include <map>
+#include <cassert>
+#include <unordered_map>
 #include <optional>
-
+namespace {
 struct Scenario {
    using Pattern = std::string;
    Pattern pattern;
@@ -12,75 +13,85 @@ struct Scenario {
 };
 
 struct State {
-   Scenario::Pattern::const_iterator curChar;
-   Scenario::Constraints::const_iterator curConstraint;
-   char c;
-   int counter;
+   unsigned char curChar;
+   unsigned char curConstraint;
+
+   // the remaining number of acceptable contigous damaged springs from here.
+   // "-1" indicates we are not in the middle of a span
+   signed char damagedSpan;
    auto operator <=> (const State &) const = default;
 };
 
-struct Matcher {
-   const Scenario &scenario;
-   std::map<State, std::optional<long>> allStates;
-   long accept() {
-      State initial = State{ scenario.pattern.cbegin(), scenario.constraints.cbegin(), scenario.pattern[0], -1, };
-      return accept(initial);
+}
+template <> struct std::hash<State> {
+   std::size_t operator() (const State &s) const {
+      // If these hold, the hash is unique.
+      assert(s.curChar < 128);
+      assert(s.curConstraint < 32);
+      assert(s.damagedSpan + 1 < 32);
+      assert(s.damagedSpan + 1 >= 0);
+      return size_t(s.curChar) | size_t(s.curConstraint)  << 7 | size_t(s.damagedSpan + 1) << 12;
    }
-   long accept(const State &state);
-   Matcher(const Scenario &s_) : scenario(s_){}
-   Matcher(const Matcher &) = default;
 };
 
-long Matcher::accept(const State &curstate) {
+namespace {
+
+class Matcher {
+public:
+   using Cache = std::unordered_map<State, std::optional<long>>;
+   long accept() const noexcept { return accept({0, 0, -1}, scenario.pattern[0]); }
+   Matcher(Cache &cache_, const Scenario &s_)
+      : scenario(s_)
+      , allStates(cache_)
+   { }
+   Matcher(const Matcher &) = delete;
+
+private:
+   const Scenario &scenario;
+   Cache &allStates;
+   long acceptNocache(const State &curstate, char c) const noexcept;
+   long accept(const State &state, char c) const noexcept;
+};
+
+long Matcher::accept(const State &curstate, char c) const noexcept {
    auto &cache = allStates[curstate];
    if (cache)
       return *cache;
-   if (curstate.curChar == scenario.pattern.cend()) {
+   auto rv = acceptNocache(curstate, c);
+   cache = rv;
+   return rv;
+}
+
+long Matcher::acceptNocache(const State &curstate, char c) const noexcept {
+   if (curstate.curChar == scenario.pattern.size())
       // If we've hit the end of the string, we should have consumed all the constraints.
-      cache = ( curstate.curConstraint == scenario.constraints.cend() && curstate.counter <= 0) ? 1 : 0;
-      return *cache;
-   }
-   switch (curstate.c) {
+      return ( curstate.curConstraint == scenario.constraints.size() && curstate.damagedSpan <= 0) ? 1 : 0;
 
+   switch (c) {
       case '.': {
-         long counter = curstate.counter;
-         if (counter != -1) {
-            if (counter != 0) {
-               cache = 0;
-               return *cache;
-            }
-            counter = -1;
+         long damagedSpan = curstate.damagedSpan;
+         if (damagedSpan != -1) {
+            if (damagedSpan != 0)
+               return 0;
+            damagedSpan = -1;
          }
          State next = curstate;
-         next.counter = counter;
-         next.c = *++next.curChar;
-         cache = accept(next);
-         return *cache;
+         next.damagedSpan = damagedSpan;
+         return accept(next, scenario.pattern[++next.curChar]);
                 }
-
       case '#': {
-         if (curstate.counter == 0 || curstate.counter == -1 && curstate.curConstraint == scenario.constraints.cend()) {
-            cache = 0; // too many in a row, or we've run out of constraints with a new '#'
-            return *cache;
+         if (curstate.damagedSpan == 0 || (curstate.damagedSpan == -1 && curstate.curConstraint == scenario.constraints.size())) {
+            return 0; // too many in a row, or we've run out of constraints with a new '#'
          }
-
          State next = curstate;
-         if (curstate.counter == -1) // start consuming the current constraint.
-            next.counter = *next.curConstraint++;
-         next.counter--;
-         next.c = *++next.curChar;
-         cache = accept(next);
-         return *cache;
+         if (curstate.damagedSpan == -1) // start consuming the current constraint.
+            next.damagedSpan = scenario.constraints[next.curConstraint++];
+         next.damagedSpan--;
+         return accept(next,  scenario.pattern[++next.curChar]);
                 }
+      case '?':
+         return acceptNocache(curstate, '.') + acceptNocache(curstate, '#');
 
-      case '?': {
-         State a = curstate;
-         State b = curstate;
-         a.c = '.';
-         b.c = '#';
-         cache = accept(a) + accept(b);
-         return *cache;
-                }
       default:
          __builtin_unreachable();
    }
@@ -118,22 +129,22 @@ Scenarios parse(std::istream &is) {
 }
 
 template <bool multiply>
-long solve(std::istream &is, std::ostream &os) {
+long solve(std::istream &is) {
    auto day = parse<multiply>(is);
    long tot = 0;
+   Matcher::Cache cache(4000);
    for (auto &s : day) {
-      Matcher acc(s);
+      cache.clear();
+      Matcher acc(cache, s);
       tot += acc.accept();
-      os.flush();
-      os << acc.allStates.size() << " cachesize\n";
    }
    return tot;
 }
-
+}
 void part1(std::istream &is, std::ostream &os) {
-   os << "part 1: " << solve<false>(is, os) << "\n";
+   os << "part 1: " << solve<false>(is) << "\n";
 }
 
 void part2(std::istream &is, std::ostream &os) {
-   os << "part 2: " << solve<true>(is, os) << "\n";
+   os << "part 2: " << solve<true>(is) << "\n";
 }

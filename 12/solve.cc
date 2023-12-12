@@ -13,7 +13,6 @@ struct Scenario {
 
 struct Matcher {
    const Scenario &scenario;
-   std::string path;
    int counter = -1;
    Scenario::Pattern::const_iterator curChar;
    Scenario::Constraints::const_iterator curConstraint;
@@ -24,24 +23,17 @@ struct Matcher {
 
 int
 Matcher::accept(char c) {
-   if (c != '?')
-      path += c;
    if (curChar == scenario.pattern.cend()) {
       // If we've hit the end of the string, we should have consumed all the constraints.
-      if (curConstraint == scenario.constraints.cend() && counter <= 0 ) {
-         std::cout << path << "\n";
-         return 1;
-      }
-      return 0;
+      return curConstraint == scenario.constraints.cend() && counter <= 0;
    }
 
    switch (c) {
       case '.':
          if (counter != -1) {
-            if (counter == 0)
-               counter = -1;
-            else
+            if (counter != 0)
                return 0;
+            counter = -1;
          }
          return accept(*++curChar);
 
@@ -54,13 +46,12 @@ Matcher::accept(char c) {
                return 0;
             counter = *curConstraint++; // start consuming the current constraint.
          }
-         assert(counter > 0);
          counter--;
          return accept(*++curChar);
 
       case '?': {
          auto copy = *this;
-         return accept('.') + copy.accept('#');
+         return copy.accept('.') + accept('#');
       }
       default:
          abort();
@@ -69,19 +60,30 @@ Matcher::accept(char c) {
 
 using Day = std::vector<Scenario>;
 
+template <bool multiply>
 Day parse(std::istream &is) {
    Day day;
    for (;;) {
-      Scenario s;
-      getline(is, s.pattern, ' ');
-      if (s.pattern == "")
+      std::string pattern;
+      getline(is, pattern, ' ');
+      if (pattern == "")
          break;
+      Scenario s;
+      s.pattern = pattern;
+      if (multiply) {
+         for (int i = 0; i < 4; ++i)
+            s.pattern += "?" + pattern;
+      }
+
       std::string tmp;
+      std::vector<int> constraints;
       for (getline(is, tmp); tmp != ""; ) {
          auto [istr, rest] = aoc::token(tmp, ",");
-         s.constraints.push_back(std::stoi(istr, nullptr, 0));
+         constraints.push_back(std::stoi(istr, nullptr, 0));
          tmp = rest;
-
+      }
+      for (int i = 0; i < (multiply ? 5 : 1); ++i) {
+         std::copy(constraints.begin(), constraints.end(), std::back_inserter(s.constraints));
       }
       day.push_back(std::move(s));
    }
@@ -97,19 +99,23 @@ template <typename T> std::ostream &operator << (std::ostream &os, const std::ve
    return os;
 }
 
-void part1(std::istream &is, std::ostream &os) {
-   auto day = parse(is);
+template <bool multiply>
+long solve(std::istream &is, std::ostream &os) {
+   auto day = parse<multiply>(is);
    long tot = 0;
    for (auto &s : day) {
       Matcher acc(s);
-      std::cout << s.pattern <<  "  " << s.constraints << " = \n";
-      long val = acc.accept(s.pattern[0]);
-      std::cout << val << "\n\n";
-      tot += val;
+      os << s.pattern << "\n";
+      tot += acc.accept(s.pattern[0]);
+      os.flush();
    }
-   os << tot << "\n";
+   return tot;
+}
+
+void part1(std::istream &is, std::ostream &os) {
+   std::cout << "part 1 " << solve<false>(is, os) << "\n";
 }
 
 void part2(std::istream &is, std::ostream &os) {
-   auto day = parse(is);
+   std::cout << "part 1 " << solve<true>(is, os) << "\n";
 }

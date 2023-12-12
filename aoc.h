@@ -9,7 +9,7 @@ typedef void (*partfn)(std::istream &, std::ostream &);
 
 namespace aoc {
 
-inline std::pair<std::string, std::string> token(std::string_view line, const std::string_view sep = " ") {
+inline std::pair<std::string, std::string> token(const std::string &line, const std::string & sep = " ") {
     auto split = line.find(sep);
     if (split == std::string::npos)
         return { std::string(line), "" };

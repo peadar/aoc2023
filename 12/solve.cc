@@ -1,8 +1,8 @@
 #include "../aoc.h"
 #include <vector>
-#include <sstream>
 #include <iterator>
-#include <cassert>
+#include <map>
+#include <optional>
 
 struct Scenario {
    using Pattern = std::string;
@@ -11,58 +11,86 @@ struct Scenario {
    Constraints constraints;
 };
 
-struct Matcher {
-   const Scenario &scenario;
-   int counter = -1;
+struct State {
    Scenario::Pattern::const_iterator curChar;
    Scenario::Constraints::const_iterator curConstraint;
-   int accept(char c);
-   Matcher(const Scenario &s_) : scenario(s_), counter(-1), curChar(s_.pattern.cbegin()), curConstraint(s_.constraints.cbegin()) {}
+   char c;
+   int counter;
+   auto operator <=> (const State &) const = default;
+};
+
+struct Matcher {
+   const Scenario &scenario;
+   std::map<State, std::optional<long>> allStates;
+   long accept() {
+      State initial = State{ scenario.pattern.cbegin(), scenario.constraints.cbegin(), scenario.pattern[0], -1, };
+      return accept(initial);
+   }
+   long accept(const State &state);
+   Matcher(const Scenario &s_) : scenario(s_){}
    Matcher(const Matcher &) = default;
 };
 
-int
-Matcher::accept(char c) {
-   if (curChar == scenario.pattern.cend()) {
+long Matcher::accept(const State &curstate) {
+   auto &cache = allStates[curstate];
+   if (cache)
+      return *cache;
+   if (curstate.curChar == scenario.pattern.cend()) {
       // If we've hit the end of the string, we should have consumed all the constraints.
-      return curConstraint == scenario.constraints.cend() && counter <= 0;
+      cache = ( curstate.curConstraint == scenario.constraints.cend() && curstate.counter <= 0) ? 1 : 0;
+      return *cache;
    }
+   switch (curstate.c) {
 
-   switch (c) {
-      case '.':
+      case '.': {
+         long counter = curstate.counter;
          if (counter != -1) {
-            if (counter != 0)
-               return 0;
+            if (counter != 0) {
+               cache = 0;
+               return *cache;
+            }
             counter = -1;
          }
-         return accept(*++curChar);
+         State next = curstate;
+         next.counter = counter;
+         next.c = *++next.curChar;
+         cache = accept(next);
+         return *cache;
+                }
 
-      case '#':
-         if (counter == 0)
-            return 0; // too many in a row.
-         if (counter == -1) {
-            // can start current counter.
-            if (curConstraint == scenario.constraints.cend())
-               return 0;
-            counter = *curConstraint++; // start consuming the current constraint.
+      case '#': {
+         if (curstate.counter == 0 || curstate.counter == -1 && curstate.curConstraint == scenario.constraints.cend()) {
+            cache = 0; // too many in a row, or we've run out of constraints with a new '#'
+            return *cache;
          }
-         counter--;
-         return accept(*++curChar);
+
+         State next = curstate;
+         if (curstate.counter == -1) // start consuming the current constraint.
+            next.counter = *next.curConstraint++;
+         next.counter--;
+         next.c = *++next.curChar;
+         cache = accept(next);
+         return *cache;
+                }
 
       case '?': {
-         auto copy = *this;
-         return copy.accept('.') + accept('#');
-      }
+         State a = curstate;
+         State b = curstate;
+         a.c = '.';
+         b.c = '#';
+         cache = accept(a) + accept(b);
+         return *cache;
+                }
       default:
-         abort();
+         __builtin_unreachable();
    }
 }
 
-using Day = std::vector<Scenario>;
+using Scenarios = std::vector<Scenario>;
 
 template <bool multiply>
-Day parse(std::istream &is) {
-   Day day;
+Scenarios parse(std::istream &is) {
+   Scenarios day;
    for (;;) {
       std::string pattern;
       getline(is, pattern, ' ');
@@ -74,7 +102,6 @@ Day parse(std::istream &is) {
          for (int i = 0; i < 4; ++i)
             s.pattern += "?" + pattern;
       }
-
       std::string tmp;
       std::vector<int> constraints;
       for (getline(is, tmp); tmp != ""; ) {
@@ -90,32 +117,23 @@ Day parse(std::istream &is) {
    return day;
 }
 
-template <typename T> std::ostream &operator << (std::ostream &os, const std::vector<T> &container) {
-   const char *sep = "";
-   for (const auto &a : container) {
-      os << sep << a;
-      sep = ", ";
-   }
-   return os;
-}
-
 template <bool multiply>
 long solve(std::istream &is, std::ostream &os) {
    auto day = parse<multiply>(is);
    long tot = 0;
    for (auto &s : day) {
       Matcher acc(s);
-      os << s.pattern << "\n";
-      tot += acc.accept(s.pattern[0]);
+      tot += acc.accept();
       os.flush();
+      os << acc.allStates.size() << " cachesize\n";
    }
    return tot;
 }
 
 void part1(std::istream &is, std::ostream &os) {
-   std::cout << "part 1 " << solve<false>(is, os) << "\n";
+   os << "part 1: " << solve<false>(is, os) << "\n";
 }
 
 void part2(std::istream &is, std::ostream &os) {
-   std::cout << "part 1 " << solve<true>(is, os) << "\n";
+   os << "part 2: " << solve<true>(is, os) << "\n";
 }

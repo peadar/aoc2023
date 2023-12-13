@@ -3,60 +3,52 @@
 #include <unistd.h>
 #include <optional>
 #include <cassert>
+#include <numeric>
 
-using BITS = uint64_t;
+using BITS = uint32_t;
 
-template <bool Smudge> struct GRID {
+struct GRID {
    std::vector<BITS> data;
-   size_t cols = 0;
-   GRID rot90() const;
+   size_t cols;
+   GRID rot90() const noexcept;
 
-   template <typename It> std::optional<size_t> findPalindrome(It begin, It end) {
-      auto evenbegin = (end - begin) % 2 == 0 ? begin : begin + 1;
-      for (auto s = evenbegin; s < end - 1; s += 2) {
-         auto matches = (end - s)/2;
-         assert((end - s) % 2 == 0);
-         int zeroes = 0;
-         int ones = 0;
-         for (auto p = s, e = end;; ++p, --e) {
-            if (p == e) {
-               if ( zeroes == matches - Smudge && ones == Smudge)
-                  return p - begin;
-               break;
-            }
+   template <bool Smudge, typename It> std::optional<size_t> findPalindrome(It begin, It end) const noexcept {
+      for (auto s = (end - begin)% 2 ? begin + 1 : begin; s < end - 1; s += 2) {
+         int zeroes = 0, ones = 0;
+         It p, e;
+         for (p = s, e = end; p != e; ++p, --e)
             if (*p == e[-1])
                zeroes++;
-            if (__builtin_popcount(*p ^ e[-1]) == 1)
+            else if (__builtin_popcount(*p ^ e[-1]) == 1)
                ones++;
-         }
+         if (zeroes == (end-s)/2 - Smudge && ones == Smudge)
+            return p - begin;
       }
       return std::nullopt;
    }
 
-   std::optional<size_t> palindromeAtNR() {
-      auto p = findPalindrome(data.begin(), data.end());
+   template <bool Smudge> std::optional<size_t> palindromeAtNR() const noexcept {
+      auto p = findPalindrome<Smudge>(data.begin(), data.end());
       if (p)
          return p;
-      p = findPalindrome(data.rbegin(), data.rend());
+      p = findPalindrome<Smudge>(data.rbegin(), data.rend());
       if (p)
          return data.size() - *p;
       return std::nullopt;
    }
 
-   size_t palindromeAt() {
-      auto p = palindromeAtNR();
+   template <bool Smudge> size_t palindromeAt() const noexcept {
+      auto p = palindromeAtNR<Smudge>();
       if (p)
          return *p * 100;
-      auto rot = this->rot90();
-      p = rot.palindromeAtNR();
+      p = rot90().palindromeAtNR<Smudge>();
       assert(p);
       return *p;
    }
-
 };
 
-template <bool Smudge> GRID<Smudge> GRID<Smudge>::rot90() const {
-   GRID<Smudge> g;
+GRID GRID::rot90() const noexcept {
+   GRID g;
    g.cols = data.size();
    g.data.resize(cols);
    for (BITS fromrow = 0; fromrow < data.size(); ++fromrow)
@@ -67,12 +59,11 @@ template <bool Smudge> GRID<Smudge> GRID<Smudge>::rot90() const {
    return g;
 }
 
-template <bool Smudge> using GRIDS = std::vector<GRID<Smudge>>;
-template <bool Smudge> GRIDS<Smudge> parse(std::istream &is) {
-   GRIDS<Smudge> result;
-   GRID<Smudge> cur;
-   for (int lineNo = 1;; ++lineNo) {
-      std::string line;;
+auto parse(std::istream &is) {
+   std::vector<GRID> result;
+   GRID cur;
+   for (;;) {
+      std::string line;
       std::getline(is, line);
       if (line == "") {
          result.push_back(std::move(cur));
@@ -93,27 +84,10 @@ template <bool Smudge> GRIDS<Smudge> parse(std::istream &is) {
    return result;
 }
 
-template <bool Smudge> std::ostream &operator <<(std::ostream &os, const GRID<Smudge> &grid) {
-   for (auto datum : grid.data) {
-      for (int i = 0; i < grid.cols; ++i)
-         os << (datum & (1 << i )? '#':'.');
-      os << "\n";
-   }
-   return os << "\n";
+template <bool Smudge> unsigned long solve(std::istream &is) {
+   auto day = parse(is);
+   return std::accumulate(day.begin(), day.end(), 0L, [](long other, const GRID &g) -> long { return other + g.palindromeAt<Smudge>(); });
 }
 
-template <bool Smudge> unsigned long solve(std::istream &is, std::ostream &os) {
-   auto day = parse<Smudge>(is);
-   unsigned long sum = 0;
-   for (auto &orig : day)
-      sum += orig.palindromeAt();
-   return sum;
-}
-
-void part1(std::istream &is, std::ostream &os) {
-   os << "part1: " <<  solve<false>(is, os) << "\n";
-}
-
-void part2(std::istream &is, std::ostream &os) {
-   os << "part2: " <<  solve<true>(is, os) << "\n";
-}
+void part1(std::istream &is, std::ostream &os) { os << "part1: " <<  solve<false>(is) << "\n"; }
+void part2(std::istream &is, std::ostream &os) { os << "part2: " <<  solve<true>(is) << "\n"; }

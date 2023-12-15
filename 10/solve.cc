@@ -69,7 +69,7 @@ std::pair<Maze, Location> parse(std::istream &is) {
    return result;
 }
 }
-void part1/* and 2 */( std::istream &is, std::ostream &os) {
+void parts( std::istream &is, std::ostream &os) {
    auto [maze, start] = parse(is);
    Cardinal dir;
    for (auto d : { NORTH, SOUTH, EAST, WEST } ) {
@@ -92,6 +92,5 @@ void part1/* and 2 */( std::istream &is, std::ostream &os) {
             ++count;
    os << "part1: " << steps/2 << "\n" << "part2: " << count << "\n";
 }
-void part2( std::istream &is, std::ostream &) {
-   auto [maze, start] = parse(is);
-}
+
+aoc::Case both("both", parts);

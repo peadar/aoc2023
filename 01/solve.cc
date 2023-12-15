@@ -72,7 +72,7 @@ solve(std::istream &in, std::ostream &out, const Trie<int> &trie) {
       int c = in.get();
       switch (c) {
          case -1:
-            out << total << "\n";
+            out << total;
             return;
          case '\n':
             assert(s == LAST);
@@ -95,6 +95,8 @@ solve(std::istream &in, std::ostream &out, const Trie<int> &trie) {
    }
 }
 
+aoc::Case part1("part1",
+      [](std::istream &is, std::ostream &os) { solve(is, os, digitsOnly); });
+aoc::Case part2("part2",
+      [](std::istream &is, std::ostream &os) { solve(is, os, numbers); });
 }
-void part1(std::istream &is, std::ostream &os) { solve(is, os, digitsOnly); }
-void part2(std::istream &is, std::ostream &os) { solve(is, os, numbers); }

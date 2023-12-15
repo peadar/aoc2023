@@ -89,5 +89,5 @@ template <bool Smudge> unsigned long solve(std::istream &is) {
    return std::accumulate(day.begin(), day.end(), 0L, [](long other, const GRID &g) -> long { return other + g.palindromeAt<Smudge>(); });
 }
 
-void part1(std::istream &is, std::ostream &os) { os << "part1: " <<  solve<false>(is) << "\n"; }
-void part2(std::istream &is, std::ostream &os) { os << "part2: " <<  solve<true>(is) << "\n"; }
+aoc::Case part1("part1", [](std::istream &is, std::ostream &os) { os << solve<false>(is); });
+aoc::Case part2("part2", [](std::istream &is, std::ostream &os) { os << solve<true>(is); });

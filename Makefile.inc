@@ -20,4 +20,4 @@ check: all
 time: all
 	./solve -t ./input.txt
 clean:
-	rm -f *.o solve
+	rm -f *.o solve core.*

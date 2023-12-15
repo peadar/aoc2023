@@ -46,9 +46,9 @@ long solve(std::istream &is, long gap) {
                output += input[inrow].idx - input[outrow].idx + std::abs(input[outrow].cols[outcol] - input[inrow].cols[incol]);
    return output;
 }
-void part1(std::istream &is, std::ostream &os) {
-   os << "part1: " << solve(is, 2) << "\n";
-}
-void part2(std::istream &is, std::ostream &os) {
-   os << "part2: " << solve(is, 1000000) << "\n";
-}
+
+aoc::Case part1("part1", [](std::istream &is, std::ostream &os) {
+   os << solve(is, 2); });
+
+aoc::Case part2("part2", [](std::istream &is, std::ostream &os) {
+   os << solve(is, 1000000); });

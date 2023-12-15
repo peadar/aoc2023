@@ -1,7 +1,6 @@
 #include "../aoc.h"
 #include <vector>
 #include <iterator>
-#include <cassert>
 #include <unordered_map>
 #include <optional>
 namespace {
@@ -15,7 +14,6 @@ struct Scenario {
 struct State {
    unsigned char curChar;
    unsigned char curConstraint;
-
    // the remaining number of acceptable contigous damaged springs from here.
    // "-1" indicates we are not in the middle of a span
    signed char damagedSpan;
@@ -25,11 +23,7 @@ struct State {
 }
 template <> struct std::hash<State> {
    std::size_t operator() (const State &s) const {
-      // If these hold, the hash is unique.
-      assert(s.curChar < 128);
-      assert(s.curConstraint < 32);
-      assert(s.damagedSpan + 1 < 32);
-      assert(s.damagedSpan + 1 >= 0);
+      // This shoould actually be unique for the input data we have.
       return size_t(s.curChar) | size_t(s.curConstraint)  << 7 | size_t(s.damagedSpan + 1) << 12;
    }
 };
@@ -50,17 +44,13 @@ private:
    const Scenario &scenario;
    Cache &allStates;
    long acceptNocache(const State &curstate, char c) const noexcept;
-   long accept(const State &state, char c) const noexcept;
-};
-
-long Matcher::accept(const State &curstate, char c) const noexcept {
-   auto &cache = allStates[curstate];
-   if (cache)
+   long accept(const State &curstate, char c) const noexcept {
+      auto &cache = allStates[curstate];
+      if (!cache)
+         cache = acceptNocache(curstate, c);
       return *cache;
-   auto rv = acceptNocache(curstate, c);
-   cache = rv;
-   return rv;
-}
+   }
+};
 
 long Matcher::acceptNocache(const State &curstate, char c) const noexcept {
    if (curstate.curChar == scenario.pattern.size())
@@ -80,9 +70,9 @@ long Matcher::acceptNocache(const State &curstate, char c) const noexcept {
          return accept(next, scenario.pattern[++next.curChar]);
                 }
       case '#': {
-         if (curstate.damagedSpan == 0 || (curstate.damagedSpan == -1 && curstate.curConstraint == scenario.constraints.size())) {
+         if (curstate.damagedSpan == 0 ||
+               (curstate.damagedSpan == -1 && curstate.curConstraint == scenario.constraints.size()))
             return 0; // too many in a row, or we've run out of constraints with a new '#'
-         }
          State next = curstate;
          if (curstate.damagedSpan == -1) // start consuming the current constraint.
             next.damagedSpan = scenario.constraints[next.curConstraint++];
@@ -98,9 +88,7 @@ long Matcher::acceptNocache(const State &curstate, char c) const noexcept {
 }
 
 using Scenarios = std::vector<Scenario>;
-
-template <bool multiply>
-Scenarios parse(std::istream &is) {
+template <bool multiply> Scenarios parse(std::istream &is) {
    Scenarios day;
    for (;;) {
       std::string pattern;
@@ -109,10 +97,9 @@ Scenarios parse(std::istream &is) {
          break;
       Scenario s;
       s.pattern = pattern;
-      if (multiply) {
+      if (multiply)
          for (int i = 0; i < 4; ++i)
             s.pattern += "?" + pattern;
-      }
       std::string tmp;
       std::vector<int> constraints;
       for (getline(is, tmp); tmp != ""; ) {
@@ -120,16 +107,14 @@ Scenarios parse(std::istream &is) {
          constraints.push_back(std::stoi(istr, nullptr, 0));
          tmp = rest;
       }
-      for (int i = 0; i < (multiply ? 5 : 1); ++i) {
+      for (int i = 0; i < (multiply ? 5 : 1); ++i)
          std::copy(constraints.begin(), constraints.end(), std::back_inserter(s.constraints));
-      }
       day.push_back(std::move(s));
    }
    return day;
 }
 
-template <bool multiply>
-long solve(std::istream &is) {
+template <bool multiply> long solve(std::istream &is) {
    auto day = parse<multiply>(is);
    long tot = 0;
    Matcher::Cache cache(4000);
@@ -141,10 +126,6 @@ long solve(std::istream &is) {
    return tot;
 }
 }
-void part1(std::istream &is, std::ostream &os) {
-   os << "part 1: " << solve<false>(is) << "\n";
-}
 
-void part2(std::istream &is, std::ostream &os) {
-   os << "part 2: " << solve<true>(is) << "\n";
-}
+aoc::Case part1("part1", [](std::istream &is, std::ostream &os) { os << solve<false>(is); });
+aoc::Case part2("part2", [](std::istream &is, std::ostream &os) { os << solve<true>(is); });

@@ -2,12 +2,13 @@
 #include <functional>
 
 void timeit(std::function<void(void)>);
-extern void part1(std::istream &, std::ostream &);
-extern void part2(std::istream &, std::ostream &);
-extern void parse(std::istream &, std::ostream &);
-typedef void (*partfn)(std::istream &, std::ostream &);
 
 namespace aoc {
+
+using Executor = std::function<void(std::istream &, std::ostream &)>;
+struct Case  {
+   Case (std::string_view name, Executor func);
+};
 
 inline std::pair<std::string, std::string> token(const std::string &line, const std::string & sep = " ") {
     auto split = line.find(sep);

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <unistd.h>
+#include "../aoc.h"
 
 struct Num {
    // Data we record about a number - the value itself, and the column
@@ -68,7 +69,7 @@ Data parse(std::istream &is) {
    return data;
 }
 
-void part1/* and 2*/(std::istream &is, std::ostream &os) {
+void both/* and 2*/(std::istream &is, std::ostream &os) {
    Data data = parse(is);
 
    static std::vector<Sym> empty;
@@ -126,4 +127,4 @@ void part1/* and 2*/(std::istream &is, std::ostream &os) {
    os << total << "\n";
 }
 
-void part2(std::istream &is, std::ostream &os) { }
+aoc::Case bothParts("both", both);

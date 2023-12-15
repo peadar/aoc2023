@@ -86,5 +86,5 @@ template <Card j> void solve(std::istream &is, std::ostream &os) {
    os << total << "\n";
 }
 
-void part1(std::istream &is, std::ostream &os) { solve<Card::JACK>(is, os); }
-void part2(std::istream &is, std::ostream &os) { solve<Card::JOKER>(is, os); }
+aoc::Case p1("part1", [](std::istream &is, std::ostream &os) { solve<Card::JACK>(is, os); });
+aoc::Case p2("part2", [](std::istream &is, std::ostream &os) { solve<Card::JOKER>(is, os); });

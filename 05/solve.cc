@@ -108,3 +108,6 @@ void part2(std::istream &in, std::ostream &out) {
    ranges = almanac.chase(ranges);
    out << std::min_element(ranges.begin(), ranges.end())->first << "\n";
 }
+
+aoc::Case p1("part1", part1);
+aoc::Case p2("part2", part2);

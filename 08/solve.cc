@@ -146,3 +146,6 @@ void part2(std::istream &is, std::ostream &os) {
    }
    os << "part2: " << lcm(pathlens.begin(), pathlens.end()) << std::endl;
 }
+
+aoc::Case p1("part1", part1);
+aoc::Case p2("part2", part2);

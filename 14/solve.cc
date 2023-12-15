@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include "../aoc.h"
 
 namespace {
 
@@ -69,10 +70,8 @@ Day & Day::cycle() noexcept {
    return shuffle(North{}).shuffle(West{}).shuffle(South{}).shuffle(East{});
 }
 
-}
-
 void part1(std::istream &is, std::ostream &os) {
-   os << "part1: " << Day{is}.shuffle(North{}).tally() << "\n";
+   os << Day{is}.shuffle(North{}).tally();
 }
 
 void part2(std::istream &is, std::ostream &os) {
@@ -94,5 +93,9 @@ void part2(std::istream &is, std::ostream &os) {
    // Now run the remaining iterations until it's its as if we ran to the target.
    for (int i = 0; i < (target - count) % period; ++i)
       day.cycle();
-   os << "part2: " << day.tally() << "\n";
+   os << day.tally();
+}
+
+aoc::Case p1("part1", part1);
+aoc::Case p2("part2", part2);
 }

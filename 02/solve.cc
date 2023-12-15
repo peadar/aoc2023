@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "../aoc.h"
 
+namespace {
 enum Color { RED, GREEN, BLUE, COLORS };
 
 struct Draw {
@@ -88,4 +89,8 @@ part2(std::istream &is, std::ostream &os) {
       sums += std::accumulate(min.colors, min.colors + COLORS, 1, std::multiplies());
    }
    os << sums << "\n";
+}
+
+aoc::Case p1("part1", part1);
+aoc::Case p2("part2", part2);
 }

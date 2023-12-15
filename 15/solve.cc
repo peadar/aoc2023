@@ -53,7 +53,6 @@ long power(const Boxes &boxes) {
    }
    return result;
 }
-}
 void part1(std::istream &is, std::ostream &os) {
    int c;
    long total = 0;
@@ -102,4 +101,8 @@ void part2(std::istream &is, std::ostream &os) {
       }
    }
    os << power(boxes) << "\n";
+}
+
+aoc::Case p1("part1", part1);
+aoc::Case p2("part1", part2);
 }

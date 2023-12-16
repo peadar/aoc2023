@@ -1,6 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <algorithm>
+#include <bits/stdc++.h>
 
 namespace {
 using Location = std::pair<int, int>;
@@ -22,9 +20,9 @@ struct Grid {
             }
       return total;
    }
-   int rowcount() { return d.size(); }
-   int colcount() { return d[0].size(); }
-   bool contains(Location l) {
+   int rowcount() const noexcept { return d.size(); }
+   int colcount() const noexcept { return d[0].size(); }
+   bool contains(Location l) const noexcept {
       return l.first >= 0 &&
          l.first < rowcount() &&
          l.second >= 0 && l.second < colcount();

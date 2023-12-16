@@ -96,7 +96,3 @@ void part2(std::istream &is, std::ostream &os) {
       day.cycle();
    os << "part2: " << day.tally() << "\n";
 }
-
-int main() {
-   part2(std::cin, std::cout);
-}

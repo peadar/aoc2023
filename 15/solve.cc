@@ -5,6 +5,7 @@
 #include <climits>
 static_assert(CHAR_BIT == 8, "I am assuming unsigned chars do arithmetic mod 256");
 
+namespace {
 struct Lens {
    std::string name;
    int focalLength;
@@ -52,7 +53,7 @@ long power(const Boxes &boxes) {
    }
    return result;
 }
-
+}
 void part1(std::istream &is, std::ostream &os) {
    int c;
    long total = 0;
@@ -73,9 +74,9 @@ void part1(std::istream &is, std::ostream &os) {
 }
 
 void part2(std::istream &is, std::ostream &os) {
-   char op;
+   char op = 0;
    std::string label;
-   size_t focalLength;
+   size_t focalLength = 0;
    Boxes boxes;
    for (int c; (c = is.get()) != -1; ) {
       switch (c) {

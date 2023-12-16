@@ -1,4 +1,4 @@
-#include "../aoc.h"
+#include <iostream>
 #include <vector>
 #include <algorithm>
 
@@ -10,7 +10,7 @@ struct Day {
    template <typename Direction> Day &shuffle(const Direction &d) noexcept;
    long tally() const noexcept;
    Day &cycle() noexcept;
-   auto operator <=>(const Day &) const = default;
+   bool operator ==(const Day &) const = default;
 };
 
 // There is definitely a more succinct way to do all this...
@@ -95,4 +95,8 @@ void part2(std::istream &is, std::ostream &os) {
    for (int i = 0; i < (target - count) % period; ++i)
       day.cycle();
    os << "part2: " << day.tally() << "\n";
+}
+
+int main() {
+   part2(std::cin, std::cout);
 }

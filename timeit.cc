@@ -24,5 +24,5 @@ timeit(std::function<void(void)> f) {
     auto perop = double(micros) / double(iters);
     std::cout << "time taken: " << micros << "us, iterations=" << iters
        << ", operations per sec=" << (unsigned long long)(persec)
-       << ", usec/operation: " << perop << "\n";
+       << ", usec/operation: " << perop;
 }

@@ -14,21 +14,29 @@ Case::Case(std::string_view name, Executor callable) {
 
 struct SB : std::streambuf {
    std::vector<char> vec;
-   SB(std::vector<char> &&vec) : vec(vec) { }
-   void reset() { setg(vec.data(), vec.data(), vec.data() + vec.size()); }
+   SB() {}
+   SB(std::vector<char> &&vec) : vec(vec) {
+      reset();
+   }
+   void reset() {
+      setg(vec.data(), vec.data(), vec.data() + vec.size());
+   }
+   SB &operator = (std::vector<char> &&rhs) {
+      vec = std::move(rhs);
+      reset();
+      return *this;
+   }
 };
 
-SB bufferis(std::istream &is) {
+std::vector<char> bufferis(std::istream &is) {
       // read the content of the file into memory, and issue it from there.
       // copy content into vector of char.
       std::vector<char> buf;
       is.seekg(0);
       std::copy( std::istreambuf_iterator<char>(is.rdbuf()),
             std::istreambuf_iterator<char>(), std::back_inserter(buf));
-
-      return SB{ std::move(buf) };
+      return buf;
 }
-
 
 int main(int argc, char *argv[]) {
    bool do_timeit { false };
@@ -46,29 +54,32 @@ int main(int argc, char *argv[]) {
    }
 
    std::ifstream in( argv[optind], std::ifstream::binary);
-
+   std::fstream null;
+   SB sb;
+   std::function<aoc::Executor (aoc::Executor)> wrap;
    if (do_timeit) {
-      std::fstream null("/dev/null");
-      auto sb = bufferis(in);
-      for (auto [name, func] : aoc::functions) {
-         if (parts != "*" && parts != name)
-            continue;
-         std::cout << "function: " << name << "\n";
-         timeit([&] {
-               sb.reset();
-               std::istream memin(&sb);
-               func(memin, null);
-               });
-      }
-      return 0;
+      null = std::fstream("/dev/null");
+      sb = bufferis(in);
+      wrap = [&] (aoc::Executor e) -> aoc::Executor {
+         return [&, e](std::istream &, std::ostream &) {
+            timeit([&, e] {
+                  sb.reset();
+                  std::istream memin(&sb);
+                  e(memin, null);
+                  });
+         };
+      };
    } else {
-      std::cout << "running " << aoc::functions.size() << " parts \n";
-      for (auto &[ name, func ] : aoc::functions) {
-         std::cout << name << ": ";
-         func(in, std::cout);
-         std::cout << "\n";
-         in.clear();
-         in.seekg(0);
-      }
+      wrap = [] (aoc::Executor e) { return e; };
+   }
+
+   for (auto &[ name, func ] : aoc::functions) {
+      if (parts != "*" && parts != name)
+         continue;
+      std::cout << name << ": ";
+      wrap(func)(in, std::cout);
+      std::cout << "\n";
+      in.clear();
+      in.seekg(0);
    }
 }

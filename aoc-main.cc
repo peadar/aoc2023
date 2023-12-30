@@ -1,5 +1,6 @@
 #include "aoc.h"
 #include <fstream>
+#include <set>
 #include <iterator>
 #include <unistd.h>
 
@@ -40,15 +41,19 @@ std::vector<char> bufferis(std::istream &is) {
 
 int main(int argc, char *argv[]) {
    bool do_timeit { false };
-   std::string parts = "*";
+   std::set<std::string> parts;
+   bool quiet { false };
 
-   for (int c; (c = getopt(argc, argv, "tp:")) != -1; ) {
+   for (int c; (c = getopt(argc, argv, "tp:q")) != -1; ) {
       switch (c) {
          case 't':
             do_timeit = true;
             break;
          case 'p':
-            parts = optarg;
+            parts.insert(optarg);
+            break;
+         case 'q':
+            quiet = true;
             break;
       }
    }
@@ -74,11 +79,13 @@ int main(int argc, char *argv[]) {
    }
 
    for (auto &[ name, func ] : aoc::functions) {
-      if (parts != "*" && parts != name)
+      if (!parts.empty() && parts.find(name) == parts.end())
          continue;
-      std::cout << name << ": ";
+      if (!quiet)
+         std::cout << name << ": ";
       wrap(func)(in, std::cout);
-      std::cout << "\n";
+      if (!quiet)
+         std::cout << "\n";
       in.clear();
       in.seekg(0);
    }

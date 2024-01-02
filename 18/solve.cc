@@ -1,78 +1,47 @@
 #include "../aoc.h"
+using Location = std::pair<long, long>;
+using Insn = std::tuple<char, uint8_t, int>;
 
-struct Location {
-   long row = 0, col = 0;
-   Location &operator += ( const Location &r) {
-      row += r.row;
-      col += r.col;
-      return *this;
-   }
-};
-
-struct Insn {
-   char direction;
-   uint8_t steps;
-   int color;
-   template <typename Dir, typename Steps> Location process(Location start, Dir dir, Steps steps) const {
-      auto cnt = steps(*this);
-      switch (dir(*this)) {
-         case 'R': return { start.row, start.col + cnt };
-         case 'D': return { start.row + cnt, start.col };
-         case 'L': return { start.row, start.col - cnt };
-         case 'U': return { start.row - cnt, start.col };
-         default: abort();
-      }
-   }
-};
-using Insns = std::vector<Insn>;
-
-Insns parse(std::istream &is) {
-   Insns insns;
-   for (int line = 0;; ++line) {
-      char direction, lbrack, hash, rbrack;
-      int count, color;
-      is >> direction >> count >> lbrack >> hash >> std::hex >> color >> std::dec >> rbrack;
-      if (!is)
-         break;
-      insns.emplace_back(direction, count, color);
-   }
-   return insns;
+std::istream &operator >> (std::istream &is, Insn &insn) {
+   char _;
+   int count;
+   is >> get<0>(insn) >> count >> _ >> _ >> std::hex >> get<2>(insn) >> std::dec >> _;
+   get<1>(insn) = count;
+   return is;
 }
 
 template <typename GetDir, typename GetSteps> long
 shoelace(std::istream &is, GetDir dir, GetSteps steps) {
-   Insns insns = parse(is);
    std::vector<Location> points;
-   Location topleft, bottomright, current;
-   // Get the sequence of points, and the stepcount.
+   Location current;
    points.push_back(current);
    long stepcnt = 0;
-   for (auto &insn: insns) {
-      current = insn.process(current, dir, steps);
-      stepcnt += steps(insn);
+   for (Insn insn;; stepcnt += steps(insn)) {
+      if (!(is >> insn))
+         break;
+      switch (dir(insn)) {
+         case 'R': current.second += steps(insn); break;
+         case 'D': current.first += steps(insn); break;
+         case 'L': current.second -= steps(insn); break;
+         case 'U': current.first -= steps(insn); break;
+         default: abort();
+      }
       points.push_back(current);
    }
-   // do shoelace.
    long shoelace = 0;
-   auto sz = points.size();
-   for (size_t i = 0; i < sz; ++i)
-      shoelace += (points[i].row) * (points[(i+sz-1)%sz].col - points[(i+sz+1)%sz].col);
-   if (shoelace < 0)
-      shoelace = -shoelace;
-   shoelace /= 2;
+   for (size_t i = 0, sz = points.size(); i < sz; ++i)
+      shoelace += (points[i].first) * (points[(i+sz-1)%sz].second - points[(i+sz+1)%sz].second);
+   shoelace = std::abs(shoelace) / 2;
    return stepcnt / 2 + 1 + shoelace; // Add  half + 1 of the exterior points
 }
 
 aoc::Case part1("part1", [](std::istream &is, std::ostream &os) {
    os << shoelace(is,
-         [](const Insn &l) { return l.direction; },
-         [](const Insn &l) { return l.steps; }
-       );});
+         [](const Insn &l) { return get<0>(l); },
+         [](const Insn &l) { return get<1>(l); });});
 
 aoc::Case part2("part2", [](std::istream &is, std::ostream &os) {
    static const char dirs[] = "RDLU";
    os << shoelace(is,
-         [](const Insn &l) { return dirs[l.color & 0xf]; },
-         [](const Insn &l) { return l.color >> 4; }
-       );});
-
+         [](const Insn &l) { return dirs[get<2>(l) & 0xf]; },
+         [](const Insn &l) { return get<2>(l) >> 4; });});

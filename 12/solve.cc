@@ -1,8 +1,6 @@
 #include "../aoc.h"
-#include <vector>
-#include <iterator>
-#include <unordered_map>
-#include <optional>
+using namespace std::literals;
+
 namespace {
 struct Scenario {
    using Pattern = std::string;
@@ -103,8 +101,8 @@ template <bool multiply> Scenarios parse(std::istream &is) {
       std::string tmp;
       std::vector<int> constraints;
       for (getline(is, tmp); tmp != ""; ) {
-         auto [istr, rest] = aoc::token(tmp, ",");
-         constraints.push_back(std::stoi(istr, nullptr, 0));
+         auto [istr, rest] = aoc::token(std::string_view(tmp), ","sv);
+         constraints.push_back(std::strtol(istr.data(), nullptr, 0));
          tmp = rest;
       }
       for (int i = 0; i < (multiply ? 5 : 1); ++i)

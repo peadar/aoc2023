@@ -1,5 +1,4 @@
-#include <iostream>
-#include <functional>
+#include <bits/stdc++.h>
 
 void timeit(std::function<void(void)>);
 
@@ -10,12 +9,13 @@ struct Case  {
    Case (std::string_view name, Executor func);
 };
 
-inline std::pair<std::string, std::string> token(const std::string &line, const std::string & sep = " ") {
+template <typename String>
+inline std::pair<String, String> token(const String line, const String sep = " ") {
     auto split = line.find(sep);
     if (split == std::string::npos)
-        return { std::string(line), "" };
+        return { line, "" };
     else
-        return { std::string(line.substr(0, split)), std::string(line.substr(split + sep.size())) };
+        return { line.substr(0, split), line.substr(split + sep.size()) };
 }
 
 }
